@@ -9,23 +9,16 @@ import {
   Legend,
 } from 'chart.js';
 import zoomPlugin from 'chartjs-plugin-zoom';
-import { Chart } from 'react-chartjs-2';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { format, subHours, startOfHour } from 'date-fns';
 import GraphControls from './Controls';
 import type { Chart as ChartJSInstance } from 'chart.js';
 import type { TooltipItem } from 'chart.js';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Legend,
-  zoomPlugin
-);
+import dynamic from 'next/dynamic';
+const Chart = dynamic(() => import('react-chartjs-2').then(mod => mod.Chart), {
+  ssr: false,
+});
 
 interface CommitDataPoint {
   timestamp: string;
@@ -50,6 +43,20 @@ export default function GitGraph({ commits }: Props) {
   const chartRef = useRef<ChartJSInstance<'bar' | 'line'> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    ChartJS.register(
+      CategoryScale,
+      LinearScale,
+      BarElement,
+      PointElement,
+      LineElement,
+      Tooltip,
+      Legend,
+      zoomPlugin
+    );
+    setIsChartReady(true);
+  }, []);
+  
   // Delay render until client-side
   const [isChartReady, setIsChartReady] = useState(false);
   useEffect(() => {
