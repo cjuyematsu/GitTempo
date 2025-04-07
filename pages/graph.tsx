@@ -41,14 +41,14 @@ export default function GraphPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
-      {typeof repo === 'string' && (
+      {repo && typeof repo === 'string' ? (
         <h1 className="text-3xl font-bold mb-4">
           Commit Activity for{' '}
           <span className="text-indigo-400 font-semibold">
             {repo.split('/').pop()}
           </span>
         </h1>
-      )}
+      ) : null}
       {loading && <p className="text-gray-400">Loading commits...</p>}
 
       {error && <p className="text-red-500">{error}</p>}
