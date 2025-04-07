@@ -14,18 +14,13 @@ import { format, subHours, startOfHour } from 'date-fns';
 import GraphControls from './Controls';
 import type { Chart as ChartJSInstance } from 'chart.js';
 import type { TooltipItem } from 'chart.js';
+import { CommitDataPoint } from '../types';
 
 import dynamic from 'next/dynamic';
 const Chart = dynamic(() => import('react-chartjs-2').then(mod => mod.Chart), {
   ssr: false,
 });
 
-interface CommitDataPoint {
-  timestamp: string;
-  author: string;
-  additions: number;
-  deletions: number;
-}
 
 interface Props {
   repo: string;
@@ -40,6 +35,7 @@ export default function GitGraph({ commits }: Props) {
   const [mode, setMode] = useState<'bar' | 'line'>('bar');
   const [includeInitial, setIncludeInitial] = useState(true);
   const [hoursBack, setHoursBack] = useState(48);
+  const [hideDependencyCommits, setHideDependencyCommits] = useState(true);
   const chartRef = useRef<ChartJSInstance<'bar' | 'line'> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -69,8 +65,11 @@ export default function GitGraph({ commits }: Props) {
       const first = commits[0];
       filtered = filtered.filter((c) => c !== first);
     }
+    if (hideDependencyCommits) {
+      filtered = filtered.filter(c => !c.isDependencyChange);
+    }
     return filtered;
-  }, [commits, selectedAuthors, includeInitial]);
+  }, [commits, selectedAuthors, includeInitial, hideDependencyCommits]);
 
   const { labels, additionsData, deletionsData, trendData } = useMemo(() => {
     const bins: Record<string, { adds: number; dels: number }> = {};
@@ -188,21 +187,21 @@ export default function GitGraph({ commits }: Props) {
   };
 
   const handleAutoZoom = () => {
-  if (!chartRef.current) return;
+    if (!chartRef.current) return;
 
-  const first = additionsData.findIndex((val, i) => val !== 0 || deletionsData[i] !== 0);
-  const last = [...additionsData]
-    .map((val, i) => ({ val, i }))
-    .reverse()
-    .find(({ val, i }) => val !== 0 || deletionsData[i] !== 0)?.i;
+    const first = additionsData.findIndex((val, i) => val !== 0 || deletionsData[i] !== 0);
+    const last = [...additionsData]
+      .map((val, i) => ({ val, i }))
+      .reverse()
+      .find(({ val, i }) => val !== 0 || deletionsData[i] !== 0)?.i;
 
-  if (first !== -1 && last !== undefined && chartRef.current?.zoomScale) {
-    chartRef.current.zoomScale('x', {
-      min: first,
-      max: last,
-    });
-  }
-};
+    if (first !== -1 && last !== undefined && chartRef.current?.zoomScale) {
+      chartRef.current.zoomScale('x', {
+        min: first,
+        max: last,
+      });
+    }
+  };
 
   return (
     <div
@@ -221,6 +220,8 @@ export default function GitGraph({ commits }: Props) {
         setIncludeInitial={setIncludeInitial}
         hoursBack={hoursBack}
         setHoursBack={setHoursBack}
+        hideDependencyCommits={hideDependencyCommits}
+        setHideDependencyCommits={setHideDependencyCommits}
         onAutoZoom={handleAutoZoom}
       />
 
@@ -232,6 +233,10 @@ export default function GitGraph({ commits }: Props) {
         <p>
           Total Deletions:{' '}
           <span className="text-red-400 font-semibold">{totalDeletions}</span>
+        </p>
+        <p>
+          Showing {filteredCommits.length} of {commits.length} commits
+          {hideDependencyCommits && ' (dependency changes hidden)'}
         </p>
       </div>
 

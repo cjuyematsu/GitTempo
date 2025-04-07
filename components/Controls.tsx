@@ -13,6 +13,8 @@ interface GraphControlsProps {
   setIncludeInitial: (val: boolean) => void;
   hoursBack: number;
   setHoursBack: (val: number) => void;
+  hideDependencyCommits: boolean;
+  setHideDependencyCommits: (val: boolean) => void;
   onAutoZoom: () => void;
 }
 
@@ -28,6 +30,8 @@ export default function GraphControls({
   setIncludeInitial,
   hoursBack,
   setHoursBack,
+  hideDependencyCommits,
+  setHideDependencyCommits,
   onAutoZoom,
 }: GraphControlsProps) {
   const router = useRouter();
@@ -108,6 +112,15 @@ export default function GraphControls({
               className="accent-indigo-500"
             />
             Initial Commit
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={hideDependencyCommits}
+              onChange={(e) => setHideDependencyCommits(e.target.checked)}
+              className="accent-indigo-500"
+            />
+            Hide Dependencies
           </label>
         </div>
 

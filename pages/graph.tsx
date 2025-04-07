@@ -3,13 +3,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { fetchCommits } from '../utils/fetchCommits';
 import dynamic from 'next/dynamic';
-
-interface CommitDataPoint {
-  timestamp: string;
-  author: string;
-  additions: number;
-  deletions: number;
-}
+import { CommitDataPoint } from '../types';
 
 const GitGraph = dynamic(() => import('../components/GitGraph'), { ssr: false });
 
