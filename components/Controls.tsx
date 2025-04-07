@@ -9,8 +9,8 @@ interface GraphControlsProps {
   setShowTrend: (val: boolean) => void;
   mode: 'bar' | 'line';
   setMode: (mode: 'bar' | 'line') => void;
-  includeInitial: boolean;
-  setIncludeInitial: (val: boolean) => void;
+  hideFirstHour: boolean;
+  setHideFirstHour: (val: boolean) => void;
   hoursBack: number;
   setHoursBack: (val: number) => void;
   hideDependencyCommits: boolean;
@@ -26,8 +26,8 @@ export default function GraphControls({
   setShowTrend,
   mode,
   setMode,
-  includeInitial,
-  setIncludeInitial,
+  hideFirstHour,
+  setHideFirstHour,
   hoursBack,
   setHoursBack,
   hideDependencyCommits,
@@ -107,11 +107,11 @@ export default function GraphControls({
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
-              checked={includeInitial}
-              onChange={(e) => setIncludeInitial(e.target.checked)}
+              checked={hideFirstHour}
+              onChange={(e) => setHideFirstHour(e.target.checked)}
               className="accent-indigo-500"
             />
-            Initial Commit
+            Hide First Hour
           </label>
           <label className="flex items-center gap-2">
             <input

@@ -10,7 +10,7 @@ import {
 } from 'chart.js';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { format, subHours, startOfHour } from 'date-fns';
+import { format, subHours, startOfHour, isBefore, addHours } from 'date-fns';
 import GraphControls from './Controls';
 import type { Chart as ChartJSInstance } from 'chart.js';
 import type { TooltipItem } from 'chart.js';
@@ -32,7 +32,7 @@ export default function GitGraph({ commits }: Props) {
   const [selectedAuthors, setSelectedAuthors] = useState<string[]>(allAuthors);
   const [showTrend, setShowTrend] = useState(true);
   const [mode, setMode] = useState<'bar' | 'line'>('bar');
-  const [includeInitial, setIncludeInitial] = useState(true);
+  const [hideFirstHour, setHideFirstHour] = useState(false);
   const [hoursBack, setHoursBack] = useState(48);
   const [hideDependencyCommits, setHideDependencyCommits] = useState(true);
   const chartRef = useRef<ChartJSInstance<'bar' | 'line'> | null>(null);
@@ -49,13 +49,25 @@ export default function GitGraph({ commits }: Props) {
 
   // Define filteredCommits before it's used in the useEffect
   const filteredCommits = useMemo(() => {
+    // First filter by selected authors
     let filtered = commits.filter((c) => selectedAuthors.includes(c.author));
-    if (!includeInitial && commits.length > 0) {
-      const first = commits[0];
-      filtered = filtered.filter((c) => c !== first);
+    
+    // If hideFirstHour is enabled, filter out commits from the first hour
+    if (hideFirstHour && filtered.length > 0) {
+      // Find the earliest commit timestamp
+      const timestamps = filtered.map(c => new Date(c.timestamp).getTime());
+      const earliestTimestamp = Math.min(...timestamps);
+      const cutoffTime = addHours(new Date(earliestTimestamp), 1);
+      
+      // Filter out commits that are before the cutoff time (within first hour)
+      filtered = filtered.filter((c) => {
+        const commitTime = new Date(c.timestamp);
+        return !isBefore(commitTime, cutoffTime);
+      });
     }
+    
     return filtered;
-  }, [commits, selectedAuthors, includeInitial]);
+  }, [commits, selectedAuthors, hideFirstHour]);
 
   useEffect(() => {
     ChartJS.register(
@@ -78,7 +90,7 @@ export default function GitGraph({ commits }: Props) {
     setMaxIndex(undefined);
     // Also reset lastZoomData when filters change
     setLastZoomData({ dataId: '', zoomRange: null });
-  }, [hoursBack, selectedAuthors, hideDependencyCommits, includeInitial]);
+  }, [hoursBack, selectedAuthors, hideDependencyCommits, hideFirstHour]);
 
   const { labels, additionsData, deletionsData, trendData } = useMemo(() => {
     const bins: Record<string, { adds: number; dels: number }> = {};
@@ -189,8 +201,8 @@ export default function GitGraph({ commits }: Props) {
   // Create a unique ID for the current data state
   const currentDataId = useMemo(() => {
     // Create a key based on all the filtering criteria
-    return `${hoursBack}-${selectedAuthors.join(',')}-${hideDependencyCommits}-${includeInitial}`;
-  }, [hoursBack, selectedAuthors, hideDependencyCommits, includeInitial]);
+    return `${hoursBack}-${selectedAuthors.join(',')}-${hideDependencyCommits}-${hideFirstHour}`;
+  }, [hoursBack, selectedAuthors, hideDependencyCommits, hideFirstHour]);
 
   // Update chartOptions to include min and max in the x scale type
   const chartOptions = {
@@ -416,8 +428,8 @@ export default function GitGraph({ commits }: Props) {
         setShowTrend={setShowTrend}
         mode={mode}
         setMode={setMode}
-        includeInitial={includeInitial}
-        setIncludeInitial={setIncludeInitial}
+        hideFirstHour={hideFirstHour}
+        setHideFirstHour={setHideFirstHour}
         hoursBack={hoursBack}
         setHoursBack={setHoursBack}
         hideDependencyCommits={hideDependencyCommits}
@@ -437,6 +449,7 @@ export default function GitGraph({ commits }: Props) {
         <p>
           Showing {visibleCommits} of {commits.length} commits
           {hideDependencyCommits && ' (dependency changes filtered)'}
+          {hideFirstHour && ' (first hour filtered)'}
         </p>
       </div>
 
