@@ -13,7 +13,7 @@ import { Chart } from 'react-chartjs-2';
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { format, subHours, startOfHour } from 'date-fns';
 import GraphControls from './Controls';
-import type { Chart as ChartJSInstance } from 'chart.js';
+import type { Chart as ChartJSInstance, TooltipItem } from 'chart.js';
 
 ChartJS.register(
   CategoryScale,
@@ -38,7 +38,7 @@ interface Props {
   commits: CommitDataPoint[];
 }
 
-export default function GitGraph({ repo, commits }: Props) {
+export default function GitGraph({ commits }: Props) {
   const allAuthors = [...new Set(commits.map((c) => c.author))];
 
   const [selectedAuthors, setSelectedAuthors] = useState<string[]>(allAuthors);
@@ -46,7 +46,6 @@ export default function GitGraph({ repo, commits }: Props) {
   const [mode, setMode] = useState<'bar' | 'line'>('bar');
   const [includeInitial, setIncludeInitial] = useState(true);
   const [hoursBack, setHoursBack] = useState(48);
-  const [chartHeight, setChartHeight] = useState(400);
 
   const chartRef = useRef<ChartJSInstance<'bar' | 'line'> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -54,11 +53,7 @@ export default function GitGraph({ repo, commits }: Props) {
   // Update chart height based on container size
   useEffect(() => {
     const updateHeight = () => {
-      if (containerRef.current) {
-        // Set height to be 70% of the container's width for a consistent aspect ratio
-        const newHeight = containerRef.current.offsetWidth * 0.7;
-        setChartHeight(Math.max(newHeight, 300)); // Minimum height of 300px
-      }
+      
     };
 
     updateHeight();
@@ -78,7 +73,6 @@ export default function GitGraph({ repo, commits }: Props) {
 
   const { labels, additionsData, deletionsData, trendData } = useMemo(() => {
     const bins: Record<string, { adds: number; dels: number }> = {};
-    const start = subHours(new Date(), hoursBack);
 
     for (let i = 0; i < hoursBack; i++) {
       const time = format(startOfHour(subHours(new Date(), hoursBack - i)), 'MMM d, ha');
@@ -161,7 +155,7 @@ export default function GitGraph({ repo, commits }: Props) {
       },
       tooltip: {
         callbacks: {
-          label: (context: any) =>
+          label: (context: TooltipItem<'bar' | 'line'>) =>
             `${context.dataset.label}: ${Math.abs(context.parsed.y)}`,
         },
       },

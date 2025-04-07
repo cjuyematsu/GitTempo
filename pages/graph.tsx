@@ -2,7 +2,7 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { fetchCommits } from '../utils/fetchCommits';
-import GitGraph from '../components/GitGraph';
+import dynamic from 'next/dynamic';
 
 interface CommitDataPoint {
   timestamp: string;
@@ -10,6 +10,8 @@ interface CommitDataPoint {
   additions: number;
   deletions: number;
 }
+
+const GitGraph = dynamic(() => import('../components/GitGraph'), { ssr: false });
 
 export default function GraphPage() {
   const router = useRouter();
