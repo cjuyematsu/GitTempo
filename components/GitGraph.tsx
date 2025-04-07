@@ -10,10 +10,10 @@ import {
 } from 'chart.js';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import { Chart } from 'react-chartjs-2';
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { format, subHours, startOfHour } from 'date-fns';
 import GraphControls from './Controls';
-import type { Chart as ChartJSInstance, TooltipItem } from 'chart.js';
+import type { Chart as ChartJSInstance } from 'chart.js';
 
 ChartJS.register(
   CategoryScale,
@@ -38,7 +38,7 @@ interface Props {
   commits: CommitDataPoint[];
 }
 
-export default function GitGraph({ commits }: Props) {
+export default function GitGraph({ repo, commits }: Props) {
   const allAuthors = [...new Set(commits.map((c) => c.author))];
 
   const [selectedAuthors, setSelectedAuthors] = useState<string[]>(allAuthors);
@@ -46,20 +46,13 @@ export default function GitGraph({ commits }: Props) {
   const [mode, setMode] = useState<'bar' | 'line'>('bar');
   const [includeInitial, setIncludeInitial] = useState(true);
   const [hoursBack, setHoursBack] = useState(48);
-
   const chartRef = useRef<ChartJSInstance<'bar' | 'line'> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Update chart height based on container size
+  // Delay render until client-side
+  const [isChartReady, setIsChartReady] = useState(false);
   useEffect(() => {
-    const updateHeight = () => {
-      
-    };
-
-    updateHeight();
-    window.addEventListener('resize', updateHeight);
-
-    return () => window.removeEventListener('resize', updateHeight);
+    setIsChartReady(true);
   }, []);
 
   const filteredCommits = useMemo(() => {
@@ -89,7 +82,6 @@ export default function GitGraph({ commits }: Props) {
     const labels = Object.keys(bins);
     const additionsData = labels.map((h) => bins[h].adds);
     const deletionsData = labels.map((h) => -bins[h].dels);
-
     const trendData = additionsData.map((_, i, arr) => {
       const prev = arr[i - 1] ?? 0;
       const curr = arr[i];
@@ -148,14 +140,14 @@ export default function GitGraph({ commits }: Props) {
 
   const chartOptions = {
     responsive: true,
-    maintainAspectRatio: false, // This is important for custom sizing
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         labels: { color: '#fff' },
       },
       tooltip: {
         callbacks: {
-          label: (context: TooltipItem<'bar' | 'line'>) =>
+          label: (context: { dataset: any; parsed: { y: number } }) =>
             `${context.dataset.label}: ${Math.abs(context.parsed.y)}`,
         },
       },
@@ -194,10 +186,10 @@ export default function GitGraph({ commits }: Props) {
       .find(({ val, i }) => val !== 0 || deletionsData[i] !== 0)?.i;
 
     if (first !== -1 && last !== undefined && chartRef.current?.scales?.x) {
-      chartRef.current?.zoomScale('x', {
-        min: first,
-        max: last,
-      });
+      const scale = chartRef.current.scales.x;
+      scale.options.min = first;
+      scale.options.max = last;
+      chartRef.current.update();
     }
   };
 
@@ -206,46 +198,41 @@ export default function GitGraph({ commits }: Props) {
       ref={containerRef}
       className="fixed inset-0 bg-gray-900 p-4 flex flex-col overflow-hidden"
     >
-      {/* Controls + Totals */}
-      <div className="shrink-0">
-        <GraphControls
-          authors={allAuthors}
-          selectedAuthors={selectedAuthors}
-          setSelectedAuthors={setSelectedAuthors}
-          showTrend={showTrend}
-          setShowTrend={setShowTrend}
-          mode={mode}
-          setMode={setMode}
-          includeInitial={includeInitial}
-          setIncludeInitial={setIncludeInitial}
-          hoursBack={hoursBack}
-          setHoursBack={setHoursBack}
-          onAutoZoom={handleAutoZoom}
-        />
-  
-        <div className="mb-4 text-sm text-gray-300 space-y-1">
-          <p>
-            Total Additions:{' '}
-            <span className="text-green-400 font-semibold">{totalAdditions}</span>
-          </p>
-          <p>
-            Total Deletions:{' '}
-            <span className="text-red-400 font-semibold">{totalDeletions}</span>
-          </p>
-        </div>
+      <GraphControls
+        authors={allAuthors}
+        selectedAuthors={selectedAuthors}
+        setSelectedAuthors={setSelectedAuthors}
+        showTrend={showTrend}
+        setShowTrend={setShowTrend}
+        mode={mode}
+        setMode={setMode}
+        includeInitial={includeInitial}
+        setIncludeInitial={setIncludeInitial}
+        hoursBack={hoursBack}
+        setHoursBack={setHoursBack}
+        onAutoZoom={handleAutoZoom}
+      />
+
+      <div className="mb-4 text-sm text-gray-300 space-y-1">
+        <p>
+          Total Additions:{' '}
+          <span className="text-green-400 font-semibold">{totalAdditions}</span>
+        </p>
+        <p>
+          Total Deletions:{' '}
+          <span className="text-red-400 font-semibold">{totalDeletions}</span>
+        </p>
       </div>
-  
-      {/* Graph Area */}
+
       <div className="flex-1 overflow-hidden">
-        <Chart
-          ref={chartRef}
-          type={mode}
-          data={chartData}
-          options={{
-            ...chartOptions,
-            maintainAspectRatio: false, // makes it grow to container
-          }}
-        />
+        {isChartReady && (
+          <Chart
+            ref={chartRef}
+            type={mode}
+            data={chartData}
+            options={chartOptions}
+          />
+        )}
       </div>
     </div>
   );
