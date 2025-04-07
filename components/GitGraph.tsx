@@ -14,6 +14,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { format, subHours, startOfHour } from 'date-fns';
 import GraphControls from './Controls';
 import type { Chart as ChartJSInstance } from 'chart.js';
+import type { TooltipItem } from 'chart.js';
 
 ChartJS.register(
   CategoryScale,
@@ -38,7 +39,7 @@ interface Props {
   commits: CommitDataPoint[];
 }
 
-export default function GitGraph({ repo, commits }: Props) {
+export default function GitGraph({ commits }: Props) {
   const allAuthors = [...new Set(commits.map((c) => c.author))];
 
   const [selectedAuthors, setSelectedAuthors] = useState<string[]>(allAuthors);
@@ -147,8 +148,11 @@ export default function GitGraph({ repo, commits }: Props) {
       },
       tooltip: {
         callbacks: {
-          label: (context: { dataset: any; parsed: { y: number } }) =>
-            `${context.dataset.label}: ${Math.abs(context.parsed.y)}`,
+          label: (context: TooltipItem<'bar' | 'line'>) => {
+            const label = context.dataset.label || '';
+            const value = context.parsed.y !== undefined ? Math.abs(context.parsed.y) : 0;
+            return `${label}: ${value}`;
+          },
         },
       },
     },
