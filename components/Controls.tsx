@@ -51,7 +51,7 @@ export default function GraphControls({
           onClick={() => router.push('/')}
           className="flex items-center text-indigo-400 hover:text-indigo-300 text-sm"
         >
-          ← Back to search
+          Back to search
         </button>
       </div>
 

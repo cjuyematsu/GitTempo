@@ -41,7 +41,7 @@ export default function Home() {
         >
           Generate Graph
         </button>
-        <p className="mb-4 text-gray-400 pt-6 text-center">Were you rushing or were you dragging</p>
+        <p className="mb-4 text-gray-400 pt-6 text-center">When were you most productive?</p>
       </form>
     </div>
   );

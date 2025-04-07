@@ -83,14 +83,15 @@ export default function GitGraph({ commits }: Props) {
     setIsChartReady(true);
   }, []);
 
-  // Reset zoom when filter criteria change
+  // Reset zoom ONLY when time frame changes
   useEffect(() => {
     // Reset zoom to show the full range of data when time frame changes
     setMinIndex(undefined);
     setMaxIndex(undefined);
-    // Also reset lastZoomData when filters change
+    // Also reset lastZoomData when time frame changes
     setLastZoomData({ dataId: '', zoomRange: null });
-  }, [hoursBack, selectedAuthors, hideDependencyCommits, hideFirstHour]);
+    console.log('Time frame changed - resetting zoom to show full chart');
+  }, [hoursBack]); // Only depend on hoursBack
 
   const { labels, additionsData, deletionsData, trendData } = useMemo(() => {
     const bins: Record<string, { adds: number; dels: number }> = {};
@@ -198,7 +199,9 @@ export default function GitGraph({ commits }: Props) {
     ],
   };
 
-  // Create a unique ID for the current data state
+  // Create a unique ID for the current data state (including all filters)
+  // This is still necessary even though we don't reset zoom, since we need 
+  // to track when data changes for the autoZoom function
   const currentDataId = useMemo(() => {
     // Create a key based on all the filtering criteria
     return `${hoursBack}-${selectedAuthors.join(',')}-${hideDependencyCommits}-${hideFirstHour}`;
@@ -322,47 +325,70 @@ export default function GitGraph({ commits }: Props) {
     const minActiveIndex = Math.min(...activeIndices);
     const maxActiveIndex = Math.max(...activeIndices);
     
-    // Calculate padding based on data density
-    // Use less padding when data is sparse
+    // Calculate padding based on data density AND time frame size
     const dataDensity = binsWithActivity.length / labels.length;
     console.log(`Data density: ${dataDensity.toFixed(3)} (${binsWithActivity.length} active bins / ${labels.length} total bins)`);
     
-    // Dynamic padding: less padding for sparse data, more for dense data
-    // For very sparse data (1-2 bars), use minimal padding
-    let padding;
+    // Calculate base padding from data density
+    let basePadding;
     if (binsWithActivity.length <= 2) {
-      // For 1-2 active bins, use very minimal padding (just enough to see the bars)
-      padding = 0;
+      // For 1-2 active bins, use very minimal padding
+      basePadding = 0;
     } else if (dataDensity < 0.1) {
       // For sparse data (< 10% density), use small padding
-      padding = 1;
+      basePadding = 1;
     } else if (dataDensity < 0.3) {
       // For moderate density (10-30%), use medium padding
-      padding = 2;
+      basePadding = 2;
     } else {
       // For dense data (> 30%), use standard padding
-      padding = 3;
+      basePadding = 2;
     }
+    
+    // Adjust padding based on time frame size - less padding for larger time frames
+    let timeFrameMultiplier;
+    if (hoursBack <= 12) {
+      timeFrameMultiplier = 1.0; // Full padding for 12h view
+    } else if (hoursBack <= 24) {
+      timeFrameMultiplier = 0.75; // 75% padding for 24h view
+    } else if (hoursBack <= 48) {
+      timeFrameMultiplier = 0.5; // 50% padding for 48h view
+    } else {
+      timeFrameMultiplier = 0.25; // 25% padding for 7d view
+    }
+    
+    // Calculate final padding value (rounded to nearest integer)
+    const padding = Math.round(basePadding * timeFrameMultiplier);
+    
+    console.log(`Using padding: ${padding} (base: ${basePadding}, multiplier: ${timeFrameMultiplier.toFixed(2)})`);
     
     // Apply padding with bounds checking
     let startIndex = Math.max(0, minActiveIndex - padding);
     let endIndex = Math.min(labels.length - 1, maxActiveIndex + padding);
     
-    // For sparse data, consider min range based on active bins rather than total bins
-    // This ensures we don't add too much empty space for very sparse data
+    // For sparse data, calculate minimum range based on activity distribution
     let minRange;
-    if (binsWithActivity.length <= 2) {
-      // For extremely sparse data (1-2 points), keep range very tight
-      minRange = binsWithActivity.length + 2 * padding;
-    } else if (binsWithActivity.length < 5) {
-      // For sparse data (3-4 points), slightly wider view
-      minRange = Math.max(6, binsWithActivity.length + 2 * padding);
-    } else {
-      // For more dense data, use the 30% rule as before
-      minRange = Math.max(8, Math.floor(labels.length * 0.3));
+    
+    // For larger time frames, use tighter minimum ranges
+    if (hoursBack >= 168) { // 7 days
+      minRange = binsWithActivity.length <= 2 
+        ? binsWithActivity.length + 2
+        : Math.max(4, Math.floor(labels.length * 0.1)); // 10% of total for 7d
+    } else if (hoursBack >= 48) { // 2 days
+      minRange = binsWithActivity.length <= 2
+        ? binsWithActivity.length + 3
+        : Math.max(6, Math.floor(labels.length * 0.15)); // 15% of total for 48h
+    } else if (hoursBack >= 24) { // 1 day
+      minRange = binsWithActivity.length <= 4
+        ? binsWithActivity.length + 4
+        : Math.max(8, Math.floor(labels.length * 0.2)); // 20% of total for 24h
+    } else { // 12 hours or less
+      minRange = binsWithActivity.length <= 4
+        ? binsWithActivity.length + 4
+        : Math.max(8, Math.floor(labels.length * 0.3)); // 30% of total for 12h
     }
     
-    console.log(`Using min range of ${minRange} and padding of ${padding} for ${binsWithActivity.length} active bins`);
+    console.log(`Using min range of ${minRange} for ${binsWithActivity.length} active bins`);
     
     // If our range is too small, center on the active data
     if (endIndex - startIndex < minRange) {
