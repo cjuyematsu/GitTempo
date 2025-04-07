@@ -25,7 +25,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-950 text-white px-4">
       <h1 className="text-4xl font-bold mb-6">GitTempo</h1>
-      <p className="mb-4 text-gray-400">Paste a GitHub repo URL to visualize commit activity</p>
+      <p className="mb-4 text-gray-400">Paste a public GitHub repo URL to visualize commit activity within the last 72 hours</p>
       <form onSubmit={handleSubmit} className="w-full max-w-md">
         <input
           type="text"

@@ -9,7 +9,7 @@ interface CommitDataPoint {
 
 export async function fetchCommits(repo: string): Promise<CommitDataPoint[]> {
   const [owner, repoName] = repo.split('/');
-  const since = subHours(new Date(), 48).toISOString();
+  const since = subHours(new Date(), 72).toISOString();
 
   const token = process.env.NEXT_PUBLIC_GITHUB_TOKEN;
 
