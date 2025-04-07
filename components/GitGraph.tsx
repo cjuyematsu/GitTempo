@@ -56,7 +56,7 @@ export default function GitGraph({ commits }: Props) {
     );
     setIsChartReady(true);
   }, []);
-  
+
   // Delay render until client-side
   const [isChartReady, setIsChartReady] = useState(false);
   useEffect(() => {
@@ -188,21 +188,21 @@ export default function GitGraph({ commits }: Props) {
   };
 
   const handleAutoZoom = () => {
-    if (!chartRef.current) return;
+  if (!chartRef.current) return;
 
-    const first = additionsData.findIndex((val, i) => val !== 0 || deletionsData[i] !== 0);
-    const last = [...additionsData]
-      .map((val, i) => ({ val, i }))
-      .reverse()
-      .find(({ val, i }) => val !== 0 || deletionsData[i] !== 0)?.i;
+  const first = additionsData.findIndex((val, i) => val !== 0 || deletionsData[i] !== 0);
+  const last = [...additionsData]
+    .map((val, i) => ({ val, i }))
+    .reverse()
+    .find(({ val, i }) => val !== 0 || deletionsData[i] !== 0)?.i;
 
-    if (first !== -1 && last !== undefined && chartRef.current?.scales?.x) {
-      const scale = chartRef.current.scales.x;
-      scale.options.min = first;
-      scale.options.max = last;
-      chartRef.current.update();
-    }
-  };
+  if (first !== -1 && last !== undefined && chartRef.current?.zoomScale) {
+    chartRef.current.zoomScale('x', {
+      min: first,
+      max: last,
+    });
+  }
+};
 
   return (
     <div
