@@ -7,7 +7,7 @@ export default function App({ Component, pageProps }: AppProps) {
     <>
       <Head>
         <title>GitTempo</title>
-        <link rel="icon" href="/logo.png" />
+        <link rel="icon" type="image/png" href="/logo.png" />
       </Head>
       <Component {...pageProps} />
     </>
