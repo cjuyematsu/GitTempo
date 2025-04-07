@@ -1,11 +1,11 @@
 import { differenceInHours, parseISO, subHours } from 'date-fns';
 import { CommitDataPoint } from '../types';
 
-
 interface GitHubFile {
   filename: string;
-  additions?:number;
-  deletions?: string;
+  additions?: number;
+  deletions?: number;
+  status?: string;
 }
 
 export async function fetchCommits(repo: string): Promise<CommitDataPoint[]> {
@@ -30,23 +30,43 @@ export async function fetchCommits(repo: string): Promise<CommitDataPoint[]> {
     const detail = await detailRes.json();
     const date = detail.commit.author.date;
     const author = detail.commit.author.name;
-    const additions = detail.stats?.additions || 0;
-    const deletions = detail.stats?.deletions || 0;
     
-    // Check if commit is dependency-related
-    const isDependencyChange = detail.files?.some((file: GitHubFile) => 
-      file.filename.includes('package.json') || 
-      file.filename.includes('package-lock.json') ||
-      file.filename.includes('yarn.lock')
-    ) || false;
+    // Track both total and non-dependency changes
+    let totalAdditions = 0;
+    let totalDeletions = 0;
+    let nonDependencyAdditions = 0;
+    let nonDependencyDeletions = 0;
+    let hasDependencyChanges = false;
+    
+    // Process each file in the commit
+    detail.files?.forEach((file: GitHubFile) => {
+      const isDependencyFile = 
+        file.filename.includes('package.json') || 
+        file.filename.includes('package-lock.json') ||
+        file.filename.includes('yarn.lock');
+      
+      // Count all changes for totals
+      totalAdditions += file.additions || 0;
+      totalDeletions += file.deletions || 0;
+      
+      if (isDependencyFile) {
+        hasDependencyChanges = true;
+      } else {
+        // Count only non-dependency changes
+        nonDependencyAdditions += file.additions || 0;
+        nonDependencyDeletions += file.deletions || 0;
+      }
+    });
 
     if (differenceInHours(new Date(), parseISO(date)) <= 48) {
       data.push({
         timestamp: date,
         author,
-        additions,
-        deletions,
-        isDependencyChange
+        additions: totalAdditions, // Will be filtered in GitGraph component
+        deletions: totalDeletions, // Will be filtered in GitGraph component
+        nonDependencyAdditions,    // For filtered view
+        nonDependencyDeletions,    // For filtered view
+        isDependencyChange: hasDependencyChanges
       });
     }
   }

@@ -21,7 +21,6 @@ const Chart = dynamic(() => import('react-chartjs-2').then(mod => mod.Chart), {
   ssr: false,
 });
 
-
 interface Props {
   repo: string;
   commits: CommitDataPoint[];
@@ -65,11 +64,8 @@ export default function GitGraph({ commits }: Props) {
       const first = commits[0];
       filtered = filtered.filter((c) => c !== first);
     }
-    if (hideDependencyCommits) {
-      filtered = filtered.filter(c => !c.isDependencyChange);
-    }
     return filtered;
-  }, [commits, selectedAuthors, includeInitial, hideDependencyCommits]);
+  }, [commits, selectedAuthors, includeInitial]);
 
   const { labels, additionsData, deletionsData, trendData } = useMemo(() => {
     const bins: Record<string, { adds: number; dels: number }> = {};
@@ -79,11 +75,19 @@ export default function GitGraph({ commits }: Props) {
       bins[time] = { adds: 0, dels: 0 };
     }
 
-    filteredCommits.forEach(({ timestamp, additions, deletions }) => {
+    filteredCommits.forEach(({ timestamp, additions, deletions, nonDependencyAdditions, nonDependencyDeletions, isDependencyChange }) => {
       const hour = format(startOfHour(new Date(timestamp)), 'MMM d, ha');
       if (!bins[hour]) return;
-      bins[hour].adds += additions;
-      bins[hour].dels += deletions;
+
+      if (hideDependencyCommits && isDependencyChange) {
+        // Only count non-dependency changes for dependency commits when toggle is on
+        bins[hour].adds += nonDependencyAdditions;
+        bins[hour].dels += nonDependencyDeletions;
+      } else {
+        // Count all changes otherwise
+        bins[hour].adds += additions;
+        bins[hour].dels += deletions;
+      }
     });
 
     const labels = Object.keys(bins);
@@ -97,10 +101,34 @@ export default function GitGraph({ commits }: Props) {
     });
 
     return { labels, additionsData, deletionsData, trendData };
-  }, [filteredCommits, hoursBack]);
+  }, [filteredCommits, hoursBack, hideDependencyCommits]);
 
-  const totalAdditions = additionsData.reduce((a, b) => a + b, 0);
-  const totalDeletions = deletionsData.reduce((a, b) => a + Math.abs(b), 0);
+  // Calculate totals based on current filter state
+  const { totalAdditions, totalDeletions, visibleCommits } = useMemo(() => {
+    let additions = 0;
+    let deletions = 0;
+    let visibleCount = 0;
+
+    filteredCommits.forEach(({ additions: allAdds, deletions: allDels, nonDependencyAdditions, nonDependencyDeletions, isDependencyChange }) => {
+      if (hideDependencyCommits && isDependencyChange) {
+        additions += nonDependencyAdditions;
+        deletions += nonDependencyDeletions;
+        if (nonDependencyAdditions > 0 || nonDependencyDeletions > 0) {
+          visibleCount++;
+        }
+      } else {
+        additions += allAdds;
+        deletions += allDels;
+        visibleCount++;
+      }
+    });
+
+    return {
+      totalAdditions: additions,
+      totalDeletions: deletions,
+      visibleCommits: visibleCount
+    };
+  }, [filteredCommits, hideDependencyCommits]);
 
   const chartData = {
     labels,
@@ -235,8 +263,8 @@ export default function GitGraph({ commits }: Props) {
           <span className="text-red-400 font-semibold">{totalDeletions}</span>
         </p>
         <p>
-          Showing {filteredCommits.length} of {commits.length} commits
-          {hideDependencyCommits && ' (dependency changes hidden)'}
+          Showing {visibleCommits} of {commits.length} commits
+          {hideDependencyCommits && ' (dependency changes filtered)'}
         </p>
       </div>
 

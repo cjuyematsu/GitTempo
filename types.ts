@@ -3,5 +3,7 @@ export interface CommitDataPoint {
     author: string;
     additions: number;
     deletions: number;
+    nonDependencyAdditions: number;
+    nonDependencyDeletions: number;
     isDependencyChange: boolean;
   }
