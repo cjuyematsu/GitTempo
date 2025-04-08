@@ -10,10 +10,9 @@ import {
 } from 'chart.js';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { format, subHours, startOfHour, isBefore, addHours } from 'date-fns';
+import { format, subHours, startOfHour, isBefore, addHours, differenceInHours } from 'date-fns';
 import GraphControls from './Controls';
 import type { Chart as ChartJSInstance } from 'chart.js';
-import type { TooltipItem } from 'chart.js';
 import { CommitDataPoint } from '../types';
 
 import dynamic from 'next/dynamic';
@@ -33,7 +32,12 @@ export default function GitGraph({ commits }: Props) {
   const [showTrend, setShowTrend] = useState(true);
   const [mode, setMode] = useState<'bar' | 'line'>('bar');
   const [hideFirstHour, setHideFirstHour] = useState(false);
-  const [hoursBack, setHoursBack] = useState(48);
+  const [timeRange, setTimeRange] = useState<{
+    type: 'hours' | 'custom';
+    hoursBack?: number;
+    startDate?: Date;
+    endDate?: Date;
+  }>({ type: 'hours', hoursBack: 48 });
   const [hideDependencyCommits, setHideDependencyCommits] = useState(true);
   const chartRef = useRef<ChartJSInstance<'bar' | 'line'> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -47,14 +51,41 @@ export default function GitGraph({ commits }: Props) {
   // Delay render until client-side
   const [isChartReady, setIsChartReady] = useState(false);
 
+  // Calculate the actual start and end dates based on the time range settings
+  const { startDate, endDate } = useMemo(() => {
+    const now = new Date();
+    if (timeRange.type === 'custom' && timeRange.startDate && timeRange.endDate) {
+      return {
+        startDate: timeRange.startDate,
+        endDate: timeRange.endDate
+      };
+    } else if (timeRange.type === 'hours' && timeRange.hoursBack) {
+      return {
+        startDate: subHours(now, timeRange.hoursBack),
+        endDate: now
+      };
+    }
+    // Default to 48 hours if no valid range is set
+    return {
+      startDate: subHours(now, 48),
+      endDate: now
+    };
+  }, [timeRange]);
+
   // Define filteredCommits before it's used in the useEffect
   const filteredCommits = useMemo(() => {
-    // First filter by selected authors
-    let filtered = commits.filter((c) => selectedAuthors.includes(c.author));
+    // First filter by date range
+    let filtered = commits.filter((c) => {
+      const commitDate = new Date(c.timestamp);
+      return commitDate >= startDate && commitDate <= endDate;
+    });
+    
+    // Then filter by selected authors
+    filtered = filtered.filter((c) => selectedAuthors.includes(c.author));
     
     // If hideFirstHour is enabled, filter out commits from the first hour
     if (hideFirstHour && filtered.length > 0) {
-      // Find the earliest commit timestamp
+      // Find the earliest commit timestamp within the filtered range
       const timestamps = filtered.map(c => new Date(c.timestamp).getTime());
       const earliestTimestamp = Math.min(...timestamps);
       const cutoffTime = addHours(new Date(earliestTimestamp), 1);
@@ -67,7 +98,7 @@ export default function GitGraph({ commits }: Props) {
     }
     
     return filtered;
-  }, [commits, selectedAuthors, hideFirstHour]);
+  }, [commits, selectedAuthors, hideFirstHour, startDate, endDate]);
 
   useEffect(() => {
     ChartJS.register(
@@ -83,36 +114,76 @@ export default function GitGraph({ commits }: Props) {
     setIsChartReady(true);
   }, []);
 
-  // Reset zoom ONLY when time frame changes
+  // Reset zoom when time frame or filters change
   useEffect(() => {
     // Reset zoom to show the full range of data when time frame changes
     setMinIndex(undefined);
     setMaxIndex(undefined);
     // Also reset lastZoomData when time frame changes
     setLastZoomData({ dataId: '', zoomRange: null });
-    console.log('Time frame changed - resetting zoom to show full chart');
-  }, [hoursBack]); // Only depend on hoursBack
+    console.log('Time frame or filters changed - resetting zoom to show full chart');
+  }, [timeRange, selectedAuthors, hideFirstHour, hideDependencyCommits]);
 
   const { labels, additionsData, deletionsData, trendData } = useMemo(() => {
+    // Calculate the total hours in the selected range
+    const totalHours = differenceInHours(endDate, startDate);
+    
+    // Determine bin size based on total time range
+    let binSizeHours = 1; // Default to 1 hour bins
+    
+    if (totalHours > 168) { // More than 7 days
+      binSizeHours = 6; // Use 6-hour bins
+    } else if (totalHours > 72) { // More than 3 days
+      binSizeHours = 3; // Use 3-hour bins
+    } else if (totalHours > 48) { // More than 2 days
+      binSizeHours = 2; // Use 2-hour bins
+    }
+    
+    // Calculate number of bins
+    const numBins = Math.ceil(totalHours / binSizeHours);
+    
+    // Create bins
     const bins: Record<string, { adds: number; dels: number }> = {};
-
-    for (let i = 0; i < hoursBack; i++) {
-      const time = format(startOfHour(subHours(new Date(), hoursBack - i)), 'MMM d, ha');
-      bins[time] = { adds: 0, dels: 0 };
+    
+    for (let i = 0; i < numBins; i++) {
+      const binStart = addHours(startDate, i * binSizeHours);
+      const binEnd = addHours(binStart, binSizeHours);
+      
+      let label;
+      if (binSizeHours === 1) {
+        label = format(startOfHour(binStart), 'MMM d, ha');
+      } else {
+        label = `${format(binStart, 'MMM d, ha')} - ${format(binEnd, 'ha')}`;
+      }
+      
+      bins[label] = { adds: 0, dels: 0 };
     }
 
     filteredCommits.forEach(({ timestamp, additions, deletions, nonDependencyAdditions, nonDependencyDeletions, isDependencyChange }) => {
-      const hour = format(startOfHour(new Date(timestamp)), 'MMM d, ha');
-      if (!bins[hour]) return;
+      const commitDate = new Date(timestamp);
+      const hoursSinceStart = differenceInHours(commitDate, startDate);
+      const binIndex = Math.floor(hoursSinceStart / binSizeHours);
+      
+      const binStart = addHours(startDate, binIndex * binSizeHours);
+      const binEnd = addHours(binStart, binSizeHours);
+      
+      let label;
+      if (binSizeHours === 1) {
+        label = format(startOfHour(binStart), 'MMM d, ha');
+      } else {
+        label = `${format(binStart, 'MMM d, ha')} - ${format(binEnd, 'ha')}`;
+      }
+      
+      if (!bins[label]) return;
 
       if (hideDependencyCommits && isDependencyChange) {
         // Only count non-dependency changes for dependency commits when toggle is on
-        bins[hour].adds += nonDependencyAdditions;
-        bins[hour].dels += nonDependencyDeletions;
+        bins[label].adds += nonDependencyAdditions;
+        bins[label].dels += nonDependencyDeletions;
       } else {
         // Count all changes otherwise
-        bins[hour].adds += additions;
-        bins[hour].dels += deletions;
+        bins[label].adds += additions;
+        bins[label].dels += deletions;
       }
     });
 
@@ -127,7 +198,7 @@ export default function GitGraph({ commits }: Props) {
     });
 
     return { labels, additionsData, deletionsData, trendData };
-  }, [filteredCommits, hoursBack, hideDependencyCommits]);
+  }, [filteredCommits, startDate, endDate, hideDependencyCommits]);
 
   // Calculate totals based on current filter state
   const { totalAdditions, totalDeletions, visibleCommits } = useMemo(() => {
@@ -200,33 +271,19 @@ export default function GitGraph({ commits }: Props) {
   };
 
   // Create a unique ID for the current data state (including all filters)
-  // This is still necessary even though we don't reset zoom, since we need 
-  // to track when data changes for the autoZoom function
   const currentDataId = useMemo(() => {
     // Create a key based on all the filtering criteria
-    return `${hoursBack}-${selectedAuthors.join(',')}-${hideDependencyCommits}-${hideFirstHour}`;
-  }, [hoursBack, selectedAuthors, hideDependencyCommits, hideFirstHour]);
+    return `${timeRange.type}-${timeRange.hoursBack}-${timeRange.startDate?.getTime()}-${timeRange.endDate?.getTime()}-${selectedAuthors.join(',')}-${hideDependencyCommits}-${hideFirstHour}`;
+  }, [timeRange, selectedAuthors, hideDependencyCommits, hideFirstHour]);
 
-  // Update chartOptions to include min and max in the x scale type
-  const chartOptions = {
+  const chartOptions = useMemo(() => ({ // Make options memoized if they depend on state/props
     responsive: true,
-    maintainAspectRatio: false,
+    maintainAspectRatio: false, // Crucial for filling height
     animation: {
-      duration: 0 // Turn off all animations for better zoom performance
+      duration: 0
     },
     plugins: {
-      legend: {
-        labels: { color: '#fff' },
-      },
-      tooltip: {
-        callbacks: {
-          label: (context: TooltipItem<'bar' | 'line'>) => {
-            const label = context.dataset.label || '';
-            const value = context.parsed.y !== undefined ? Math.abs(context.parsed.y) : 0;
-            return `${label}: ${value}`;
-          },
-        },
-      },
+      legend: { labels: { color: '#fff' } },
       zoom: {
         limits: {
           x: {min: 0, max: labels.length - 1},
@@ -252,29 +309,19 @@ export default function GitGraph({ commits }: Props) {
     },
     scales: {
       x: {
-        min: minIndex, // Add this to make TypeScript happy
-        max: maxIndex, // Add this to make TypeScript happy
-        ticks: {
-          color: '#ccc',
-          maxRotation: 90,
-          minRotation: 45,
-        },
-        grid: {
-          color: 'rgba(255,255,255,0.1)',
-        },
+        min: minIndex,
+        max: maxIndex,
+        ticks: { color: '#ccc', maxRotation: 90, minRotation: 45 },
+        grid: { color: 'rgba(255,255,255,0.1)' },
         stacked: mode === 'bar',
       },
       y: {
-        ticks: {
-          color: '#ccc',
-        },
-        grid: {
-          color: 'rgba(255,255,255,0.1)',
-        },
+        ticks: { color: '#ccc' },
+        grid: { color: 'rgba(255,255,255,0.1)' },
         stacked: mode === 'bar',
       },
     },
-  };
+  }), [mode, minIndex, maxIndex, labels.length]);
 
   const handleAutoZoom = () => {
     if (filteredCommits.length === 0) return;
@@ -347,14 +394,15 @@ export default function GitGraph({ commits }: Props) {
     
     // Adjust padding based on time frame size - less padding for larger time frames
     let timeFrameMultiplier;
-    if (hoursBack <= 12) {
+    const totalHours = differenceInHours(endDate, startDate);
+    if (totalHours <= 12) {
       timeFrameMultiplier = 1.0; // Full padding for 12h view
-    } else if (hoursBack <= 24) {
+    } else if (totalHours <= 24) {
       timeFrameMultiplier = 0.75; // 75% padding for 24h view
-    } else if (hoursBack <= 48) {
+    } else if (totalHours <= 48) {
       timeFrameMultiplier = 0.5; // 50% padding for 48h view
     } else {
-      timeFrameMultiplier = 0.25; // 25% padding for 7d view
+      timeFrameMultiplier = 0.25; // 25% padding for 7d+ view
     }
     
     // Calculate final padding value (rounded to nearest integer)
@@ -370,15 +418,15 @@ export default function GitGraph({ commits }: Props) {
     let minRange;
     
     // For larger time frames, use tighter minimum ranges
-    if (hoursBack >= 168) { // 7 days
+    if (totalHours >= 168) { // 7 days
       minRange = binsWithActivity.length <= 2 
         ? binsWithActivity.length + 2
         : Math.max(4, Math.floor(labels.length * 0.1)); // 10% of total for 7d
-    } else if (hoursBack >= 48) { // 2 days
+    } else if (totalHours >= 48) { // 2 days
       minRange = binsWithActivity.length <= 2
         ? binsWithActivity.length + 3
         : Math.max(6, Math.floor(labels.length * 0.15)); // 15% of total for 48h
-    } else if (hoursBack >= 24) { // 1 day
+    } else if (totalHours >= 24) { // 1 day
       minRange = binsWithActivity.length <= 4
         ? binsWithActivity.length + 4
         : Math.max(8, Math.floor(labels.length * 0.2)); // 20% of total for 24h
@@ -441,54 +489,127 @@ export default function GitGraph({ commits }: Props) {
     });
   };
 
+  // Function to zoom out to show all commits (up to 500)
+  const handleZoomOutToAllCommits = () => {
+    // Reset zoom to show full range
+    setMinIndex(undefined);
+    setMaxIndex(undefined);
+    setLastZoomData({
+      dataId: currentDataId,
+      zoomRange: null
+    });
+    
+    // Set time range to show all commits (up to 500)
+    const commitDates = commits.map(c => new Date(c.timestamp)).sort((a, b) => a.getTime() - b.getTime());
+    const earliestCommit = commitDates[0];
+    const latestCommit = commitDates[commitDates.length - 1];
+    
+    // Add some padding (10%) to the time range
+    const totalTime = latestCommit.getTime() - earliestCommit.getTime();
+    const paddedStart = new Date(earliestCommit.getTime() - totalTime * 0.1);
+    const paddedEnd = new Date(latestCommit.getTime() + totalTime * 0.1);
+    
+    setTimeRange({
+      type: 'custom',
+      startDate: paddedStart,
+      endDate: paddedEnd
+    });
+  };
+
   return (
+    // Outer container: Default allows scroll, lg uses fixed flex column
     <div
       ref={containerRef}
-      className="fixed inset-0 bg-gray-900 p-4 flex flex-col overflow-hidden"
+      className="bg-gray-900 min-h-screen text-white"
     >
-      <GraphControls
-        authors={allAuthors}
-        selectedAuthors={selectedAuthors}
-        setSelectedAuthors={setSelectedAuthors}
-        showTrend={showTrend}
-        setShowTrend={setShowTrend}
-        mode={mode}
-        setMode={setMode}
-        hideFirstHour={hideFirstHour}
-        setHideFirstHour={setHideFirstHour}
-        hoursBack={hoursBack}
-        setHoursBack={setHoursBack}
-        hideDependencyCommits={hideDependencyCommits}
-        setHideDependencyCommits={setHideDependencyCommits}
-        onAutoZoom={handleAutoZoom}
-      />
-
-      <div className="mb-4 text-sm text-gray-300 space-y-1">
-        <p>
-          Total Additions:{' '}
-          <span className="text-green-400 font-semibold">{totalAdditions}</span>
-        </p>
-        <p>
-          Total Deletions:{' '}
-          <span className="text-red-400 font-semibold">{totalDeletions}</span>
-        </p>
-        <p>
-          Showing {visibleCommits} of {commits.length} commits
-          {hideDependencyCommits && ' (dependency changes filtered)'}
-          {hideFirstHour && ' (first hour filtered)'}
-        </p>
+      {/* Top Info Bar: Always visible, shrinks on lg */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-300 pt-4 pl-2">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-300"> {/* Added text style */}
+          <p>
+            Total Additions:{' '}
+            <span className="text-green-400 font-semibold">{totalAdditions}</span>
+          </p>
+          <p>
+            Total Deletions:{' '}
+            <span className="text-red-400 font-semibold">{totalDeletions}</span>
+          </p>
+          {/* Auto-Zoom Button Added Here */}
+          <button
+            onClick={handleAutoZoom}
+            className="px-3 py-1 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700" // Adjusted size to text-xs
+          >
+            Auto-Zoom
+          </button>
+          <div className="flex items-center gap-x-2 flex-shrink-0">
+          <button
+            type="button"
+            onClick={handleZoomOutToAllCommits}
+            className="px-3 py-1 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700" // Adjusted size to text-xs
+            title="Zoom out to show all commits in the selected range"
+          >
+            Show All Commits
+          </button>
+        </div>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      {/* Graph Area: Takes h-screen on mobile, flex-1 on lg */}
+      <div className="h-screen relative bg-gray-900">
         {isChartReady && (
-          <Chart
-            ref={chartRef}
-            type={mode}
-            data={chartData}
-            options={chartOptions}
-            plugins={[zoomPlugin]}
-          />
+          <div className="absolute inset-0 p-2 md:p-4"> {/* Padding inside */}
+            <Chart
+              ref={chartRef}
+              type={mode}
+              data={chartData}
+              options={chartOptions}
+              plugins={[zoomPlugin]}
+            />
+          </div>
         )}
+        {!isChartReady && (
+             <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+               Loading Chart...
+            </div>
+         )}
+      </div>
+
+      {/* Bottom Section: Controls & More Stats. Below graph on mobile, fixed bottom bar on lg */}
+      <div className="bg-gray-800 p-4 space-y-4 lg:p-2 lg:space-y-0 lg:flex-shrink-0"> {/* Adjusted padding/spacing for lg */}
+
+        {/* Controls Section */}
+        <div>
+           {/* Controls heading is inside GraphControls, assuming it handles its own visibility/styling */}
+           <GraphControls
+              authors={allAuthors}
+              selectedAuthors={selectedAuthors}
+              setSelectedAuthors={setSelectedAuthors}
+              showTrend={showTrend}
+              setShowTrend={setShowTrend}
+              mode={mode}
+              setMode={setMode}
+              hideFirstHour={hideFirstHour}
+              setHideFirstHour={setHideFirstHour}
+              timeRange={timeRange}
+              setTimeRange={setTimeRange}
+              hideDependencyCommits={hideDependencyCommits}
+              setHideDependencyCommits={setHideDependencyCommits}
+              onAutoZoom={handleAutoZoom}
+              onZoomOutToAllCommits={handleZoomOutToAllCommits}
+            />
+        </div>
+
+        {/* Stats Section (Visible commits & Time range) */}
+        {/* On large screens, display these stats compactly */}
+        <div className="space-y-1 text-sm text-gray-300 pt-3 lg:pt-2 lg:flex lg:flex-wrap lg:items-center lg:gap-x-4 lg:gap-y-1"> {/* Adjust top padding, use flex for horizontal layout on lg */}
+            <p>
+              Showing {visibleCommits} of {commits.length} commits
+              {hideDependencyCommits && ' (dependency changes filtered)'}
+              {hideFirstHour && ' (first hour filtered)'}
+            </p>
+            <p>
+              Time range: {format(startDate, 'MMM d, yyyy HH:mm')} to {format(endDate, 'MMM d, yyyy HH:mm')}
+            </p>
+        </div>
       </div>
     </div>
   );
