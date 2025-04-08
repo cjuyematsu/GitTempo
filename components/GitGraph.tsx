@@ -270,7 +270,16 @@ export default function GitGraph({ commits }: Props) {
     responsive: true,
     maintainAspectRatio: false, // Crucial for filling height
     animation: {
-      duration: 0
+      duration: 500,
+      easing: 'easeOutQuart' as const
+    },
+    transitions: {
+      zoom: {
+        animation: {
+          duration: 500,
+          easing: 'easeOutCubic' as const,
+        },
+      },
     },
     plugins: {
       legend: { labels: { color: '#fff' } },
