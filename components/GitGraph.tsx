@@ -99,6 +99,12 @@ export default function GitGraph({ commits }: Props) {
     setIsChartReady(true);
   }, []);
 
+  useEffect(() => {
+    if (commits.length > 0) {
+      handleZoomOutToAllCommits();
+    }
+  }, []);
+
   // Reset zoom when time frame or filters change
   useEffect(() => {
     // Reset zoom to show the full range of data when time frame changes
@@ -106,7 +112,7 @@ export default function GitGraph({ commits }: Props) {
     setMaxIndex(undefined);
     // Also reset lastZoomData when time frame changes
     setLastZoomData({ dataId: '', zoomRange: null });
-  }, [timeRange, selectedAuthors, hideDependencyCommits]);
+  }, [timeRange]);
 
   const { labels, additionsData, deletionsData, trendData } = useMemo(() => {
     // Calculate the total hours in the selected range
