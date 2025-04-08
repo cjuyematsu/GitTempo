@@ -42,16 +42,26 @@ export default function GraphPage() {
       try {
         setLoading(true);
         setProgress(0);
-  
+    
         const progressInterval = setInterval(() => {
-          setProgress(prev => Math.min(prev + 10, 80));
-        }, 300);
-  
-        const data = await fetchCommits(repoPath); 
+          setProgress(prev => {
+            if (prev < 50) {
+              return Math.min(prev + 2, 50);
+            } else if (prev < 90) {
+              return Math.min(prev + 1, 90);
+            } else {
+              return prev;
+            }
+          });
+        }, 400); // slower interval for gradual feel
+    
+        const data = await fetchCommits(repoPath);
+    
         clearInterval(progressInterval);
         setProgress(100);
-        await new Promise(resolve => setTimeout(resolve, 200));
-  
+    
+        await new Promise(resolve => setTimeout(resolve, 250)); // small delay for smooth finish
+    
         setCommits(data);
         setLoading(false);
       } catch (err) {
@@ -61,7 +71,7 @@ export default function GraphPage() {
         setProgress(0);
       }
     };
-  
+    
     loadCommits();
   }, [repo]);
 
