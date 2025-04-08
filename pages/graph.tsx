@@ -12,6 +12,11 @@ const GitGraph = dynamic(() => import('../components/GitGraph'), {
   </div>
 });
 
+function extractRepoPath(input: string): string | null {
+  const match = input.match(/github\.com\/([^/]+\/[^/]+)/);
+  return match ? match[1] : input.includes('/') ? input : null;
+}
+
 export default function GraphPage() {
   const router = useRouter();
   const { repo } = router.query;
@@ -24,6 +29,13 @@ export default function GraphPage() {
   useEffect(() => {
     if (!repo || typeof repo !== 'string') return;
   
+    const repoPath = extractRepoPath(repo);
+    if (!repoPath) {
+      setError('Invalid GitHub URL or repository format.');
+      setLoading(false);
+      return;
+    }
+  
     import('../components/GitGraph');
   
     const loadCommits = async () => {
@@ -32,11 +44,10 @@ export default function GraphPage() {
         setProgress(0);
   
         const progressInterval = setInterval(() => {
-          setProgress(prev => Math.min(prev + 10, 90));
+          setProgress(prev => Math.min(prev + 10, 80));
         }, 300);
   
-        const data = await fetchCommits(repo);
-  
+        const data = await fetchCommits(repoPath); 
         clearInterval(progressInterval);
         setProgress(100);
         await new Promise(resolve => setTimeout(resolve, 200));
@@ -80,6 +91,9 @@ export default function GraphPage() {
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             Loading commit data... ({progress}%)
+          </p>
+          <p className="text-gray-400 flex items-center">
+            This may take a few minutes 
           </p>
         </div>
       )}

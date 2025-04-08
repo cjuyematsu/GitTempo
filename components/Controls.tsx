@@ -10,8 +10,6 @@ interface GraphControlsProps {
   setShowTrend: (val: boolean) => void;
   mode: 'bar' | 'line';
   setMode: (mode: 'bar' | 'line') => void;
-  hideFirstHour: boolean;
-  setHideFirstHour: (val: boolean) => void;
   timeRange: {
     type: 'hours' | 'custom';
     hoursBack?: number;
@@ -38,8 +36,6 @@ export default function GraphControls({
   setShowTrend,
   mode,
   setMode,
-  hideFirstHour,
-  setHideFirstHour,
   timeRange,
   setTimeRange,
   hideDependencyCommits,
@@ -193,12 +189,8 @@ export default function GraphControls({
             Trend
           </label>
           <label className="flex items-center gap-x-2 cursor-pointer">
-            <input type="checkbox" checked={hideFirstHour} onChange={(e) => setHideFirstHour(e.target.checked)} className="accent-indigo-500 h-4 w-4 rounded border-gray-600"/>
-            Hide 1st Hr
-          </label>
-          <label className="flex items-center gap-x-2 cursor-pointer">
             <input type="checkbox" checked={hideDependencyCommits} onChange={(e) => setHideDependencyCommits(e.target.checked)} className="accent-indigo-500 h-4 w-4 rounded border-gray-600"/>
-            Hide Dep.
+            Hide Depenedencies
           </label>
         </div>
 

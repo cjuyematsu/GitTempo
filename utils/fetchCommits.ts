@@ -1,4 +1,3 @@
-import { differenceInHours, parseISO, subHours } from 'date-fns';
 import { CommitDataPoint } from '../types';
 
 interface GitHubFile {
@@ -10,7 +9,6 @@ interface GitHubFile {
 
 export async function fetchCommits(repo: string): Promise<CommitDataPoint[]> {
   const [owner, repoName] = repo.split('/');
-  const since = subHours(new Date(), 72).toISOString();
   const token = process.env.NEXT_PUBLIC_GITHUB_TOKEN;
   const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
@@ -20,7 +18,7 @@ export async function fetchCommits(repo: string): Promise<CommitDataPoint[]> {
   let page = 1;
 
   while (allCommits.length < maxCommits) {
-    const commitsUrl = `https://api.github.com/repos/${owner}/${repoName}/commits?since=${since}&per_page=${perPage}&page=${page}`;
+    const commitsUrl = `https://api.github.com/repos/${owner}/${repoName}/commits?per_page=${perPage}&page=${page}`;
     const res = await fetch(commitsUrl, { headers });
     if (!res.ok) throw new Error(`Failed to fetch commits list on page ${page}`);
 

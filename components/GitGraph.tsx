@@ -10,7 +10,7 @@ import {
 } from 'chart.js';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { format, subHours, startOfHour, isBefore, addHours, differenceInHours } from 'date-fns';
+import { format, subHours, startOfHour, addHours, differenceInHours } from 'date-fns';
 import GraphControls from './Controls';
 import type { Chart as ChartJSInstance } from 'chart.js';
 import { CommitDataPoint } from '../types';
@@ -31,7 +31,6 @@ export default function GitGraph({ commits }: Props) {
   const [selectedAuthors, setSelectedAuthors] = useState<string[]>(allAuthors);
   const [showTrend, setShowTrend] = useState(true);
   const [mode, setMode] = useState<'bar' | 'line'>('bar');
-  const [hideFirstHour, setHideFirstHour] = useState(false);
   const [timeRange, setTimeRange] = useState<{
     type: 'hours' | 'custom';
     hoursBack?: number;
@@ -81,24 +80,10 @@ export default function GitGraph({ commits }: Props) {
     });
     
     // Then filter by selected authors
-    filtered = filtered.filter((c) => selectedAuthors.includes(c.author));
-    
-    // If hideFirstHour is enabled, filter out commits from the first hour
-    if (hideFirstHour && filtered.length > 0) {
-      // Find the earliest commit timestamp within the filtered range
-      const timestamps = filtered.map(c => new Date(c.timestamp).getTime());
-      const earliestTimestamp = Math.min(...timestamps);
-      const cutoffTime = addHours(new Date(earliestTimestamp), 1);
-      
-      // Filter out commits that are before the cutoff time (within first hour)
-      filtered = filtered.filter((c) => {
-        const commitTime = new Date(c.timestamp);
-        return !isBefore(commitTime, cutoffTime);
-      });
-    }
-    
+    filtered = filtered.filter((c) => selectedAuthors.includes(c.author));    
     return filtered;
-  }, [commits, selectedAuthors, hideFirstHour, startDate, endDate]);
+
+  }, [commits, selectedAuthors, startDate, endDate]);
 
   useEffect(() => {
     ChartJS.register(
@@ -121,7 +106,7 @@ export default function GitGraph({ commits }: Props) {
     setMaxIndex(undefined);
     // Also reset lastZoomData when time frame changes
     setLastZoomData({ dataId: '', zoomRange: null });
-  }, [timeRange, selectedAuthors, hideFirstHour, hideDependencyCommits]);
+  }, [timeRange, selectedAuthors, hideDependencyCommits]);
 
   const { labels, additionsData, deletionsData, trendData } = useMemo(() => {
     // Calculate the total hours in the selected range
@@ -272,8 +257,8 @@ export default function GitGraph({ commits }: Props) {
   // Create a unique ID for the current data state (including all filters)
   const currentDataId = useMemo(() => {
     // Create a key based on all the filtering criteria
-    return `${timeRange.type}-${timeRange.hoursBack}-${timeRange.startDate?.getTime()}-${timeRange.endDate?.getTime()}-${selectedAuthors.join(',')}-${hideDependencyCommits}-${hideFirstHour}`;
-  }, [timeRange, selectedAuthors, hideDependencyCommits, hideFirstHour]);
+    return `${timeRange.type}-${timeRange.hoursBack}-${timeRange.startDate?.getTime()}-${timeRange.endDate?.getTime()}-${selectedAuthors.join(',')}-${hideDependencyCommits}`;
+  }, [timeRange, selectedAuthors, hideDependencyCommits]);
 
   const chartOptions = useMemo(() => ({ // Make options memoized if they depend on state/props
     responsive: true,
@@ -563,8 +548,6 @@ export default function GitGraph({ commits }: Props) {
               setShowTrend={setShowTrend}
               mode={mode}
               setMode={setMode}
-              hideFirstHour={hideFirstHour}
-              setHideFirstHour={setHideFirstHour}
               timeRange={timeRange}
               setTimeRange={setTimeRange}
               hideDependencyCommits={hideDependencyCommits}
@@ -580,7 +563,6 @@ export default function GitGraph({ commits }: Props) {
             <p>
               Showing {visibleCommits} of {commits.length} commits
               {hideDependencyCommits && ' (dependency changes filtered)'}
-              {hideFirstHour && ' (first hour filtered)'}
             </p>
             <p>
               Time range: {format(startDate, 'MMM d, yyyy HH:mm')} to {format(endDate, 'MMM d, yyyy HH:mm')}
