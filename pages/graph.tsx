@@ -53,20 +53,20 @@ export default function GraphPage() {
               return prev;
             }
           });
-        }, 400); // slower interval for gradual feel
+        }, 400); 
     
         const data = await fetchCommits(repoPath);
     
         clearInterval(progressInterval);
         setProgress(100);
     
-        await new Promise(resolve => setTimeout(resolve, 250)); // small delay for smooth finish
+        await new Promise(resolve => setTimeout(resolve, 250)); 
     
         setCommits(data);
         setLoading(false);
       } catch (err) {
         console.error(err);
-        setError('Failed to fetch commits. Please check the repo URL.');
+        setError('Failed to fetch commits. Please check the repo URL. Make sure the visibility is set to public.');
         setLoading(false);
         setProgress(0);
       }
