@@ -240,8 +240,8 @@ export default function GraphControls({
       {/* Conditionally render with transition for smoother appearance */}
       <div
         id="date-range-picker" // Match aria-controls
-        className={`transition-all duration-300 ease-in-out overflow-hidden ${showDatePicker ? 'max-h-40 mt-2' : 'max-h-0 mt-0'}`}
-      >
+        className={`transition-all duration-300 ease-in-out ${showDatePicker ? 'max-h-[300px] mt-2 overflow-y-auto' : 'max-h-0 mt-0 overflow-hidden'}`}
+        >
         <div className="p-3 bg-gray-800 rounded-md flex flex-wrap gap-4 items-end border border-gray-700">
             <div className="flex flex-col">
               <label htmlFor="start-date-input" className="text-xs text-gray-300 mb-1">Start Date</label>
