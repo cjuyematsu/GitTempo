@@ -134,46 +134,55 @@ export default function GraphControls({
               <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
           </button>
-          {/* Dropdown Panel */}
           {showContributors && (
-            <div className="absolute z-20 mt-1.5 w-fit min-w-[12rem] origin-top-left rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none max-h-80 overflow-y-auto">              <div className="p-2 space-y-1"> {/* Reduced padding slightly */}
-                {authors.length === 0 && <div className="px-2 py-1 text-sm text-gray-400">No contributors found</div>}
-                {authors.map((author) => (
-                  <label
-                    key={author}
-                    className="flex items-center space-x-2 px-2 py-1 text-sm text-gray-200 rounded hover:bg-gray-700 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedAuthors.includes(author)}
-                      onChange={() => toggleAuthor(author)}
-                      className="accent-indigo-500 h-4 w-4 rounded border-gray-600" // Style checkbox
-                    />
-                    <span className="whitespace-normal truncate max-w-[200px]" title={author}>{author}</span> {/* Truncate, add title */}
-                  </label>
-                ))}
-              </div>
-              {/* Select/Deselect All Section */}
-              {authors.length > 0 && (
-                <div className="border-t border-gray-700 px-3 py-2 flex justify-start space-x-2 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedAuthors([...authors])} // Select all *currently loaded* authors
-                    className="text-indigo-400 hover:underline focus:outline-none"
-                  >
-                    Select All ({authors.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedAuthors([])}
-                    className="text-indigo-400 hover:underline focus:outline-none"
-                  >
-                    Deselect All
-                  </button>
-                </div>
-               )}
-            </div>
-          )}
+  <div className="absolute z-20 mt-1.5 w-fit min-w-[12rem] origin-top-left rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none">
+    
+    {/* Scrollable inner list only */}
+    <div className="max-h-60 overflow-y-auto overscroll-contain">
+      <div className="p-2 space-y-1">
+        {authors.length === 0 && (
+          <div className="px-2 py-1 text-sm text-gray-400">No contributors found</div>
+        )}
+        {authors.map((author) => (
+          <label
+            key={author}
+            className="flex items-center space-x-2 px-2 py-1 text-sm text-gray-200 rounded hover:bg-gray-700 cursor-pointer"
+          >
+            <input
+              type="checkbox"
+              checked={selectedAuthors.includes(author)}
+              onChange={() => toggleAuthor(author)}
+              className="accent-indigo-500 h-4 w-4 rounded border-gray-600"
+            />
+            <span className="whitespace-normal truncate max-w-[200px]" title={author}>
+              {author}
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+
+    {/* Sticky footer buttons */}
+    {authors.length > 0 && (
+      <div className="border-t border-gray-700 px-3 py-2 flex justify-start space-x-2 text-xs bg-gray-800">
+        <button
+          type="button"
+          onClick={() => setSelectedAuthors([...authors])}
+          className="text-indigo-400 hover:underline focus:outline-none"
+        >
+          Select All ({authors.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedAuthors([])}
+          className="text-indigo-400 hover:underline focus:outline-none"
+        >
+          Deselect All
+        </button>
+      </div>
+    )}
+  </div>
+)}
         </div> {/* End Contributors Wrapper */}
 
       </div>
