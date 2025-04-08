@@ -12,7 +12,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta
           name="description"
-          content="Visualize commit activity from GitHub repos in the last 72 hours."
+          content="Visualize productivity by members over any time range. Pulls previous 500 commits."
         />
         <link rel="icon" href="/favicon.ico" />
 
@@ -20,7 +20,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta property="og:title" content="GitTempo" />
         <meta
           property="og:description"
-          content="Visualize GitHub commit activity in the last 72 hours."
+          content="Visualize productivity by members over any time range. Pulls previous 500 commits."
         />
         <meta property="og:image" content="https://gittempo.com/logo.png" />
         <meta property="og:url" content="https://gittempo.com" />
