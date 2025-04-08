@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import Head from "next/head";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
@@ -12,11 +13,9 @@ export default function App({ Component, pageProps }: AppProps) {
           name="description"
           content="Visualize commit activity from GitHub repos in the last 72 hours."
         />
-
-        {/* Favicon for browser tab */}
         <link rel="icon" href="/favicon.ico" />
 
-        {/* Social Preview */}
+        {/* Open Graph & social preview */}
         <meta property="og:title" content="GitTempo" />
         <meta
           property="og:description"
@@ -26,7 +25,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta property="og:url" content="https://gittempo.com" />
         <meta name="twitter:card" content="summary_large_image" />
 
-        {/* Structured Data for Google Search */}
+        {/* Structured Data for Google */}
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
@@ -50,6 +49,7 @@ export default function App({ Component, pageProps }: AppProps) {
         </script>
       </Head>
       <Component {...pageProps} />
+      <SpeedInsights />
     </>
   );
 }
