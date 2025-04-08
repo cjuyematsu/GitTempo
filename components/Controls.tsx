@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import { format } from 'date-fns';
 
 interface GraphControlsProps {
@@ -41,7 +40,6 @@ export default function GraphControls({
   hideDependencyCommits,
   setHideDependencyCommits,
 }: GraphControlsProps) {
-  const router = useRouter();
   const contributorsRef = useRef<HTMLDivElement>(null);
   const [showContributors, setShowContributors] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -109,12 +107,6 @@ export default function GraphControls({
     <div className="mb-4 space-y-3">
       {/* Back button and title row */}
       <div className="flex items-center space-x-4 mb-2">
-        <button
-          onClick={() => router.push('/')} // Make sure router is configured if using Next.js Pages Router
-          className="flex items-center text-indigo-400 hover:text-indigo-300 text-sm"
-        >
-          Back to search 
-        </button>
         {/* --- CONTRIBUTORS DROPDOWN --- */}
         {/* Apply flex-shrink-0 to the wrapper div, not the button */}
         <div className="relative flex-shrink-0" ref={contributorsRef}>

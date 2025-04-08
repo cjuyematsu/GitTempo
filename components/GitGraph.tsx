@@ -14,6 +14,7 @@ import { format, subHours, startOfHour, addHours, differenceInHours } from 'date
 import GraphControls from './Controls';
 import type { Chart as ChartJSInstance } from 'chart.js';
 import { CommitDataPoint } from '../types';
+import { useRouter } from 'next/router';
 
 import dynamic from 'next/dynamic';
 const Chart = dynamic(() => import('react-chartjs-2').then(mod => mod.Chart), {
@@ -40,6 +41,7 @@ export default function GitGraph({ commits }: Props) {
   const [hideDependencyCommits, setHideDependencyCommits] = useState(true);
   const chartRef = useRef<ChartJSInstance<'bar' | 'line'> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   const [minIndex, setMinIndex] = useState<number | undefined>(undefined);
   const [maxIndex, setMaxIndex] = useState<number | undefined>(undefined);
   const [lastZoomData, setLastZoomData] = useState<{
@@ -524,6 +526,12 @@ export default function GitGraph({ commits }: Props) {
             title="Zoom out to show all commits in the selected range"
           >
             Show All Commits
+          </button>
+          <button
+            onClick={() => router.push('/')} // Make sure router is configured if using Next.js Pages Router
+            className="flex items-center text-indigo-400 hover:text-indigo-300 text-sm"
+          >
+            Back to search 
           </button>
         </div>
         </div>
