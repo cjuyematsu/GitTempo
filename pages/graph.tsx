@@ -52,7 +52,7 @@ export default function GraphPage() {
       )}
 
       {!loading && commits.length === 0 && !error && (
-        <p className="text-gray-400">No commits found in the last 48 hours.</p>
+        <p className="text-gray-400">No commits found in the last 72 hours.</p>
       )}
     </div>
   );
