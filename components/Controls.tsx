@@ -117,7 +117,7 @@ export default function GraphControls({
           onClick={() => router.push('/')} // Make sure router is configured if using Next.js Pages Router
           className="flex items-center text-indigo-400 hover:text-indigo-300 text-sm"
         >
-          &larr; Back to search {/* Use HTML arrow entity */}
+          Back to search 
         </button>
         {/* --- CONTRIBUTORS DROPDOWN --- */}
         {/* Apply flex-shrink-0 to the wrapper div, not the button */}
@@ -127,7 +127,6 @@ export default function GraphControls({
             // Remove flex-shrink-0 from button itself
             className="px-3 py-1 bg-gray-700 rounded text-sm flex items-center hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900"
             onClick={() => {
-              // console.log('Contributors toggle click'); // Keep for debugging if needed
               setShowContributors((prev) => !prev);
             }}
             aria-haspopup="true" // Accessibility

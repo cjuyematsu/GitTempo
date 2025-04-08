@@ -121,7 +121,6 @@ export default function GitGraph({ commits }: Props) {
     setMaxIndex(undefined);
     // Also reset lastZoomData when time frame changes
     setLastZoomData({ dataId: '', zoomRange: null });
-    console.log('Time frame or filters changed - resetting zoom to show full chart');
   }, [timeRange, selectedAuthors, hideFirstHour, hideDependencyCommits]);
 
   const { labels, additionsData, deletionsData, trendData } = useMemo(() => {
@@ -326,7 +325,6 @@ export default function GitGraph({ commits }: Props) {
   const handleAutoZoom = () => {
     if (filteredCommits.length === 0) return;
     
-    console.log('Auto zoom triggered with', filteredCommits.length, 'commits');
     
     // Get all timestamps from filtered commits
     const timestamps = filteredCommits
@@ -334,7 +332,6 @@ export default function GitGraph({ commits }: Props) {
       .sort((a, b) => a - b);
     
     if (timestamps.length === 0) {
-      console.log('No valid timestamps found');
       return;
     }
     
@@ -351,13 +348,9 @@ export default function GitGraph({ commits }: Props) {
         activityLevel: Math.abs((additionsData[index] || 0)) + Math.abs((deletionsData[index] || 0))
       };
     }).filter(bin => bin.hasActivity);
-    
-    // Log the active bins for debugging
-    console.log(`Found ${binsWithActivity.length} bins with activity out of ${labels.length} total bins`);
-    
+        
     // If no bins have activity, show the entire chart
     if (binsWithActivity.length === 0) {
-      console.log('No bins with activity, showing full chart');
       setMinIndex(undefined);
       setMaxIndex(undefined);
       setLastZoomData({
@@ -373,9 +366,7 @@ export default function GitGraph({ commits }: Props) {
     const maxActiveIndex = Math.max(...activeIndices);
     
     // Calculate padding based on data density AND time frame size
-    const dataDensity = binsWithActivity.length / labels.length;
-    console.log(`Data density: ${dataDensity.toFixed(3)} (${binsWithActivity.length} active bins / ${labels.length} total bins)`);
-    
+    const dataDensity = binsWithActivity.length / labels.length;    
     // Calculate base padding from data density
     let basePadding;
     if (binsWithActivity.length <= 2) {
@@ -407,9 +398,7 @@ export default function GitGraph({ commits }: Props) {
     
     // Calculate final padding value (rounded to nearest integer)
     const padding = Math.round(basePadding * timeFrameMultiplier);
-    
-    console.log(`Using padding: ${padding} (base: ${basePadding}, multiplier: ${timeFrameMultiplier.toFixed(2)})`);
-    
+        
     // Apply padding with bounds checking
     let startIndex = Math.max(0, minActiveIndex - padding);
     let endIndex = Math.min(labels.length - 1, maxActiveIndex + padding);
@@ -435,9 +424,7 @@ export default function GitGraph({ commits }: Props) {
         ? binsWithActivity.length + 4
         : Math.max(8, Math.floor(labels.length * 0.3)); // 30% of total for 12h
     }
-    
-    console.log(`Using min range of ${minRange} for ${binsWithActivity.length} active bins`);
-    
+        
     // If our range is too small, center on the active data
     if (endIndex - startIndex < minRange) {
       const center = Math.floor((minActiveIndex + maxActiveIndex) / 2);
@@ -464,19 +451,8 @@ export default function GitGraph({ commits }: Props) {
       Math.abs(lastZoomData.zoomRange[1] - endIndex) <= 1;
     
     if (isAlreadyZoomed) {
-      console.log('Already properly zoomed, skipping zoom action');
       return;
     }
-    
-    console.log('Setting zoom range:', {
-      startIndex,
-      endIndex,
-      startLabel: labels[startIndex],
-      endLabel: labels[endIndex],
-      visibleBins: endIndex - startIndex + 1,
-      totalBins: labels.length,
-      activeBinsInView: binsWithActivity.filter(b => b.index >= startIndex && b.index <= endIndex).length
-    });
     
     // Update zoom state in a single operation to avoid flickering
     setMinIndex(startIndex);
