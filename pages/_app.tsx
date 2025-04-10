@@ -17,6 +17,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
         {/* Favicons */}
         <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" href="/logo.png" sizes="32x32" />
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
         {/* Optional PNG fallback if you have it */}
