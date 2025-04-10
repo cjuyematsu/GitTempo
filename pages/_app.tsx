@@ -16,10 +16,10 @@ export default function App({ Component, pageProps }: AppProps) {
         />
 
         {/* Favicons */}
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" type="image/x-icon" href="/favicon-v2.ico" />
         <link rel="icon" type="image/png" href="/logo.png" sizes="32x32" />
-        <link rel="shortcut icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/favicon.ico" />
+        <link rel="shortcut icon" href="/favicon-v2.ico" />
+        <link rel="apple-touch-icon" href="/favicon-v2.ico" />
         {/* Optional PNG fallback if you have it */}
         {/* <link rel="icon" type="image/png" href="/favicon.png" /> */}
 
