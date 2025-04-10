@@ -14,7 +14,13 @@ export default function App({ Component, pageProps }: AppProps) {
           name="description"
           content="Visualize productivity by members over any time range. Pulls previous 500 commits."
         />
+
+        {/* Favicons */}
         <link rel="icon" href="/favicon.ico" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/favicon.ico" />
+        {/* Optional PNG fallback if you have it */}
+        {/* <link rel="icon" type="image/png" href="/favicon.png" /> */}
 
         {/* Open Graph & social preview */}
         <meta property="og:title" content="GitTempo" />
