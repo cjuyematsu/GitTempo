@@ -1,8 +1,8 @@
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
-import Head from "next/head";
+import Head from "next/head"; 
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Analytics } from '@vercel/analytics/react'
+import { Analytics } from '@vercel/analytics/react';
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
@@ -15,15 +15,10 @@ export default function App({ Component, pageProps }: AppProps) {
           content="Visualize productivity by members over any time range. Pulls previous 500 commits."
         />
 
-        {/* Favicons */}
-        <link rel="icon" type="image/x-icon" href="/favicon-v2.ico" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" href="/logo.png" sizes="32x32" />
-        <link rel="shortcut icon" href="/favicon-v2.ico" />
-        <link rel="apple-touch-icon" href="/favicon-v2.ico" />
-        {/* Optional PNG fallback if you have it */}
-        {/* <link rel="icon" type="image/png" href="/favicon.png" /> */}
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
 
-        {/* Open Graph & social preview */}
         <meta property="og:title" content="GitTempo" />
         <meta
           property="og:description"
@@ -33,7 +28,6 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta property="og:url" content="https://gittempo.com" />
         <meta name="twitter:card" content="summary_large_image" />
 
-        {/* Structured Data for Google */}
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
