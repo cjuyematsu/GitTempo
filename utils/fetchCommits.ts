@@ -9,7 +9,7 @@ interface GitHubFile {
 
 export async function fetchCommits(repo: string): Promise<CommitDataPoint[]> {
   const [owner, repoName] = repo.split('/');
-  const token = process.env.GITHUB_TOKEN;
+  const token = process.env.NEXT_PUBLIC_GITHUB_TOKEN;
   const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
   const perPage = 100;
