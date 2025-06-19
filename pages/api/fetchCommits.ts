@@ -16,7 +16,7 @@ async function fetchCommitsFromGitHub(repo: string): Promise<CommitDataPoint[]> 
 
   const perPage = 100;
   const maxCommits = 500;
-  let allCommits: CommitDataPoint[] = [];
+  const allCommits: CommitDataPoint[] = [];
   let page = 1;
 
   while (allCommits.length < maxCommits) {
