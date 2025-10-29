@@ -1,40 +1,137 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# GitTempo
+
+[![Next.js](https://img.shields.io/badge/Next.js-14+-black.svg)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org)
+[![Chart.js](https://img.shields.io/badge/Chart.js-4.0+-ff6384.svg)](https://www.chartjs.org)
+
+A commit history visualization tool that analyzes GitHub repository activity patterns. Built with Next.js, TypeScript, and Chart.js.
+
+## About
+
+GitTempo fetches and visualizes commit data from public GitHub repositories. By analyzing the previous 500 commits, the application provides insights into repository development patterns, contributor activity, and project tempo through interactive charts and graphs.
+
+## Features
+
+**Repository Analysis**  
+Enter any public GitHub repository URL to fetch and analyze its commit history. The application uses the GitHub API to retrieve the most recent 500 commits with detailed metadata.
+
+**Commit Visualization**  
+An Interactive chart powered by Chart.js display commit patterns over time. Visualizations include commit frequency, contributor activity, time-of-day patterns, and day-of-week distributions.
+
+**Data Filtering**  
+Filter visualizations by relevant attributes including date ranges, specific contributors, commit types, and time periods. Dynamically update charts based on selected filters.
+
+**Commit Timeline**  
+View commits chronologically with detailed information including author, timestamp, commit message, and file changes. 
+
+**Contributor Insights**  
+Analyze individual contributor patterns and activity levels. Compare contributions across team members and identify the most active contributors.
+
+**Development Patterns**  
+Identify peak development hours, most active days of the week, and commit frequency trends. Understand when and how development work happens.
+
+## Tech Stack
+
+- **Frontend**: Next.js, React, TypeScript
+- **Data Visualization**: Chart.js
+- **API**: GitHub REST API
+- **Deployment**: Vercel
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 18.0 or later
+- GitHub personal access token (for API rate limits)
 
+### Installation
+
+1. Clone the repository
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/cjuyematsu/GitTempo.git
+cd GitTempo
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies
+```bash
+npm install
+```
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+Create a `.env` file:
+```env
+GITHUB_TOKEN=your_github_personal_access_token
+```
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+4. Run the development server
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+5. Open http://localhost:3000
 
-## Learn More
+## Usage
 
-To learn more about Next.js, take a look at the following resources:
+1. Enter a public GitHub repository URL (e.g., `https://github.com/owner/repo`)
+2. Click "Generate Graph" to fetch commit data
+3. View visualizations of the previous 500 commits
+4. Use filters to focus on specific time periods, contributors, or patterns
+5. Explore different chart types and metrics
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+.
+├── components
+│   ├── Controls.tsx
+│   └── GitGraph.tsx
+├── pages
+│   ├── _app.tsx
+│   ├── _document.tsx
+│   ├── api
+│   │   ├── fetchCommits.ts
+│   │   └── hello.ts
+│   ├── graph.tsx
+│   └── index.tsx
+├── public
+│   ├── favicon.ico
+│   └── logo.png
+├── styles
+│   └── globals.css
+├── types.ts
+└── utils
+    └── fetchCommits.ts
+```
 
-## Deploy on Vercel
+## GitHub API Integration
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The application uses the GitHub REST API to fetch commit data:
+- Retrieves up to 500 most recent commits per repository
+- Includes commit metadata (author, date, message, stats)
+- Respects GitHub API rate limits
+- Requires authentication token for extended limits
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+## Chart Types
+
+- **Commit Timeline**: Line chart showing commits over time
+- **Contributor Distribution**: Bar chart of commits per contributor
+- **Hour of Day**: Heatmap showing when commits are made
+- **Day of Week**: Bar chart showing daily patterns
+- **Commit Frequency**: Histogram of commit activity
+
+## Deployment
+
+The application is deployed on Vercel. 
+
+## License
+
+MIT License - see LICENSE file for details.
+
+## Contact
+
+- GitHub: [@cjuyematsu](https://github.com/cjuyematsu)
+- Issues: [GitHub Issues](https://github.com/cjuyematsu/GitTempo/issues)
+
+---
+
+Built with Next.js, TypeScript, and Chart.js | © 2025
