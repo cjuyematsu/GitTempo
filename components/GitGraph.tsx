@@ -283,6 +283,12 @@ export default function GitGraph({ commits }: Props) {
         },
       },
     },
+    layout: {
+      padding: {
+        top: 10,
+        bottom: 20  
+      }
+    },
     plugins: {
       legend: { labels: { color: '#fff' } },
       zoom: {
